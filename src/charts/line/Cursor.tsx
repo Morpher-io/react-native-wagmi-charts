@@ -6,9 +6,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import {
   GestureEvent,
-  LongPressGestureHandler,
-  LongPressGestureHandlerEventPayload,
-  LongPressGestureHandlerProps,
+  PanGestureHandler,
+  PanGestureHandlerProps,
+  PanGestureHandlerEventPayload
 } from 'react-native-gesture-handler';
 
 import { LineChartDimensionsContext } from './Chart';
@@ -17,7 +17,7 @@ import { bisectCenter } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import { useLineChart } from './useLineChart';
 
-export type LineChartCursorProps = LongPressGestureHandlerProps & {
+export type LineChartCursorProps = PanGestureHandlerProps & {
   children: React.ReactNode;
   type: 'line' | 'crosshair';
   // Does not work on web due to how the Cursor operates on web
@@ -79,7 +79,7 @@ export function LineChartCursor({
   };
 
   const onGestureEvent = useAnimatedGestureHandler<
-    GestureEvent<LongPressGestureHandlerEventPayload>
+    GestureEvent<PanGestureHandlerEventPayload>
   >({
     onActive: ({ x }) => {
       if (parsedPath) {
@@ -112,17 +112,18 @@ export function LineChartCursor({
 
   return (
     <CursorContext.Provider value={{ type }}>
-      <LongPressGestureHandler
-        minDurationMs={0}
-        maxDist={999999}
+      <PanGestureHandler
         onGestureEvent={onGestureEvent}
         shouldCancelWhenOutside={false}
+        activeOffsetY={[-999, 999]}
+        activeOffsetX={[-10, 10]}
+        failOffsetY={[-10, 10]}
         {...props}
       >
         <Animated.View style={StyleSheet.absoluteFill}>
           {children}
         </Animated.View>
-      </LongPressGestureHandler>
+      </PanGestureHandler>
     </CursorContext.Provider>
   );
 }
