@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as haptics from 'expo-haptics';
+// import * as haptics from 'expo-haptics';
 
 import { Box, Button, Flex, Heading, Stack, Text } from 'bumbag-native';
 import {
@@ -16,7 +16,7 @@ import { useMemo } from 'react';
 
 function invokeHaptic() {
   if (['ios', 'android'].includes(Platform.OS)) {
-    haptics.impactAsync(haptics.ImpactFeedbackStyle.Light);
+    // haptics.impactAsync(haptics.ImpactFeedbackStyle.Light);
   }
 }
 

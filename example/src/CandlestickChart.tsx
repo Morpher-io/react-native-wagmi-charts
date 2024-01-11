@@ -2,14 +2,14 @@ import * as React from 'react';
 import { Platform } from 'react-native';
 import { Box, Button, Flex, Heading, Text, Stack } from 'bumbag-native';
 import { CandlestickChart, TCandle } from 'react-native-wagmi-charts';
-import * as haptics from 'expo-haptics';
+// import * as haptics from 'expo-haptics';
 
 import mockData from './data/candlestick-data.json';
 import mockData2 from './data/candlestick-data2.json';
 
 function invokeHaptic() {
   if (['ios', 'android'].includes(Platform.OS)) {
-    haptics.impactAsync(haptics.ImpactFeedbackStyle.Light);
+    // haptics.impactAsync(haptics.ImpactFeedbackStyle.Light);
   }
 }
 
