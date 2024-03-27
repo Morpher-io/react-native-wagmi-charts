@@ -10,11 +10,7 @@
   "scripts": {
     "test": "jest",
     "typescript": "tsc --noEmit",
-    "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "prepare": "bob build",
-    "example": "yarn --cwd example",
-    "pods": "cd example && pod-install --quiet",
-    "bootstrap": "yarn example && yarn && yarn pods"
+    "lint": "eslint \"**/*.{js,ts,tsx}\""
   },
   "files": [
     "src",
@@ -51,7 +47,6 @@
     "@types/jest": "^26.0.24",
     "@types/react": "^18.2.45",
     "@types/react-native": "^0.72.8",
-    "bumbag-native": "^2.7.21",
     "eslint": "^7.31.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
@@ -77,10 +72,7 @@
   },
   "jest": {
     "preset": "react-native",
-    "modulePathIgnorePatterns": [
-      "<rootDir>/example/node_modules",
-      "<rootDir>/lib/"
-    ]
+    "modulePathIgnorePatterns": ["<rootDir>/lib/"]
   },
   "eslintConfig": {
     "root": true,
