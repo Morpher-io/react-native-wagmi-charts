@@ -21,7 +21,7 @@ export type LineChartTooltipProps = Animated.AnimateProps<ViewProps> & {
   xGutter?: number;
   yGutter?: number;
   cursorGutter?: number;
-  position?: 'top' | 'bottom';
+  position?: 'top' | 'bottom' | 'right'
   textProps?: LineChartPriceTextProps;
   textStyle?: LineChartPriceTextProps['style'];
   /**
@@ -53,17 +53,15 @@ export function LineChartTooltip({
   const { type } = React.useContext(CursorContext);
   const { currentX, currentY, isActive } = useLineChart();
 
-  const x = useSharedValue(0);
   const elementWidth = useSharedValue(0);
   const elementHeight = useSharedValue(0);
 
   const handleLayout = React.useCallback(
     (event: LayoutChangeEvent) => {
-      x.value = event.nativeEvent.layout.x;
       elementWidth.value = event.nativeEvent.layout.width;
       elementHeight.value = event.nativeEvent.layout.height;
     },
-    [elementHeight, elementWidth, x]
+    [elementHeight, elementWidth]
   );
 
   // When the user set a `at` index, get the index's y & x positions
@@ -83,18 +81,28 @@ export function LineChartTooltip({
 
   const animatedCursorStyle = useAnimatedStyle(() => {
     let translateXOffset = elementWidth.value / 2;
+    if (position === 'right') translateXOffset = elementWidth.value + cursorGutter;
+
     // the tooltip is considered static when the user specified an `at` prop
     const isStatic = atYPosition.value != null;
 
     // Calculate X position:
     const x = atXPosition ?? currentX.value;
-    if (x < elementWidth.value / 2 + xGutter) {
-      const xOffset = elementWidth.value / 2 + xGutter - x;
-      translateXOffset = translateXOffset - xOffset;
-    }
-    if (x > width - elementWidth.value / 2 - xGutter) {
-      const xOffset = x - (width - elementWidth.value / 2 - xGutter);
-      translateXOffset = translateXOffset + xOffset;
+
+    if (position === 'right'){
+      if (x < elementWidth.value + xGutter + cursorGutter) {
+        const xOffset = elementWidth.value + cursorGutter + xGutter - x;
+        translateXOffset = translateXOffset - xOffset;
+      }
+    } else {
+      if (x < elementWidth.value / 2 + xGutter) {
+        const xOffset = elementWidth.value / 2 + xGutter - x;
+        translateXOffset = translateXOffset - xOffset;
+      }
+      if (x > width - elementWidth.value / 2 - xGutter) {
+        const xOffset = x - (width - elementWidth.value / 2 - xGutter);
+        translateXOffset = translateXOffset + xOffset;
+      }
     }
 
     // Calculate Y position:
@@ -110,6 +118,8 @@ export function LineChartTooltip({
       if (y - translateYOffset + elementHeight.value > height - yGutter) {
         translateYOffset = y - (height - yGutter) + elementHeight.value;
       }
+    } else if (position === 'right'){
+      translateYOffset = elementHeight.value / 2;
     }
 
     // determine final translateY value
