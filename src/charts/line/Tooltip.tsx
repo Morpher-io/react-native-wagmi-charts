@@ -21,7 +21,8 @@ export type LineChartTooltipProps = Animated.AnimateProps<ViewProps> & {
   xGutter?: number;
   yGutter?: number;
   cursorGutter?: number;
-  position?: 'top' | 'bottom' | 'right'
+  position?: 'top' | 'bottom' | 'right' | 'left';
+  withHorizontalFloating?: boolean;
   textProps?: LineChartPriceTextProps;
   textStyle?: LineChartPriceTextProps['style'];
   /**
@@ -42,6 +43,7 @@ export function LineChartTooltip({
   yGutter = 8,
   cursorGutter = 48,
   position = 'top',
+  withHorizontalFloating = false,
   textProps,
   textStyle,
   at,
@@ -79,20 +81,41 @@ export function LineChartTooltip({
       : getYForX(parsedPath, atXPosition) ?? 0;
   }, [atXPosition]);
 
-  const animatedCursorStyle = useAnimatedStyle(() => {
-    let translateXOffset = elementWidth.value / 2;
-    if (position === 'right') translateXOffset = elementWidth.value + cursorGutter;
+  const getInitialTranslateXOffset = React.useCallback(
+    (elementWidth: number) => {
+      'worklet'
+      if (position === 'right') return elementWidth + cursorGutter;
+      if (position === 'left') return -cursorGutter;
+      return elementWidth / 2;
+    },
+    [cursorGutter, position]
+  );
 
+  const animatedCursorStyle = useAnimatedStyle(() => {
     // the tooltip is considered static when the user specified an `at` prop
     const isStatic = atYPosition.value != null;
-
+  
     // Calculate X position:
+    let translateXOffset = getInitialTranslateXOffset(elementWidth.value);
     const x = atXPosition ?? currentX.value;
+    const elementFullWidth = elementWidth.value + xGutter + cursorGutter
 
-    if (position === 'right'){
-      if (x < elementWidth.value + xGutter + cursorGutter) {
-        const xOffset = elementWidth.value + cursorGutter + xGutter - x;
-        translateXOffset = translateXOffset - xOffset;
+    if (position === 'right') {
+      if (x < elementFullWidth) {
+        if (withHorizontalFloating) {
+          translateXOffset = -cursorGutter
+        } else {
+          translateXOffset = translateXOffset - elementFullWidth + x;
+        }
+      }
+    } else if (position === 'left') {
+      if (x > width - elementFullWidth) {
+        if (withHorizontalFloating) {
+          translateXOffset = elementWidth.value + cursorGutter;
+        } else {
+          const xOffset = x - (width - elementFullWidth);
+          translateXOffset = translateXOffset + xOffset;
+        }
       }
     } else {
       if (x < elementWidth.value / 2 + xGutter) {
@@ -104,6 +127,8 @@ export function LineChartTooltip({
         translateXOffset = translateXOffset + xOffset;
       }
     }
+  
+    const translateX = x - translateXOffset;
 
     // Calculate Y position:
     let translateYOffset = 0;
@@ -118,7 +143,7 @@ export function LineChartTooltip({
       if (y - translateYOffset + elementHeight.value > height - yGutter) {
         translateYOffset = y - (height - yGutter) + elementHeight.value;
       }
-    } else if (position === 'right'){
+    } else if (position === 'right' || position === 'left'){
       translateYOffset = elementHeight.value / 2;
     }
 
@@ -142,10 +167,8 @@ export function LineChartTooltip({
 
     return {
       transform: [
-        { translateX: x - translateXOffset },
-        {
-          translateY: translateY,
-        },
+        { translateX: translateX },
+        { translateY: translateY },
       ],
       opacity: opacity,
     };
