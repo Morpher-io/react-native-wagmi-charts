@@ -21,7 +21,8 @@ export type LineChartTooltipProps = Animated.AnimateProps<ViewProps> & {
   xGutter?: number;
   yGutter?: number;
   cursorGutter?: number;
-  position?: 'top' | 'bottom';
+  position?: 'top' | 'bottom' | 'right' | 'left';
+  withHorizontalFloating?: boolean;
   textProps?: LineChartPriceTextProps;
   textStyle?: LineChartPriceTextProps['style'];
   /**
@@ -42,6 +43,7 @@ export function LineChartTooltip({
   yGutter = 8,
   cursorGutter = 48,
   position = 'top',
+  withHorizontalFloating = false,
   textProps,
   textStyle,
   at,
@@ -53,17 +55,15 @@ export function LineChartTooltip({
   const { type } = React.useContext(CursorContext);
   const { currentX, currentY, isActive } = useLineChart();
 
-  const x = useSharedValue(0);
   const elementWidth = useSharedValue(0);
   const elementHeight = useSharedValue(0);
 
   const handleLayout = React.useCallback(
     (event: LayoutChangeEvent) => {
-      x.value = event.nativeEvent.layout.x;
       elementWidth.value = event.nativeEvent.layout.width;
       elementHeight.value = event.nativeEvent.layout.height;
     },
-    [elementHeight, elementWidth, x]
+    [elementHeight, elementWidth]
   );
 
   // When the user set a `at` index, get the index's y & x positions
@@ -81,21 +81,54 @@ export function LineChartTooltip({
       : getYForX(parsedPath, atXPosition) ?? 0;
   }, [atXPosition]);
 
+  const getInitialTranslateXOffset = React.useCallback(
+    (elementWidth: number) => {
+      'worklet'
+      if (position === 'right') return elementWidth + cursorGutter;
+      if (position === 'left') return -cursorGutter;
+      return elementWidth / 2;
+    },
+    [cursorGutter, position]
+  );
+
   const animatedCursorStyle = useAnimatedStyle(() => {
-    let translateXOffset = elementWidth.value / 2;
     // the tooltip is considered static when the user specified an `at` prop
     const isStatic = atYPosition.value != null;
-
+  
     // Calculate X position:
+    let translateXOffset = getInitialTranslateXOffset(elementWidth.value);
     const x = atXPosition ?? currentX.value;
-    if (x < elementWidth.value / 2 + xGutter) {
-      const xOffset = elementWidth.value / 2 + xGutter - x;
-      translateXOffset = translateXOffset - xOffset;
+    const elementFullWidth = elementWidth.value + xGutter + cursorGutter
+
+    if (position === 'right') {
+      if (x < elementFullWidth) {
+        if (withHorizontalFloating) {
+          translateXOffset = -cursorGutter
+        } else {
+          translateXOffset = translateXOffset - elementFullWidth + x;
+        }
+      }
+    } else if (position === 'left') {
+      if (x > width - elementFullWidth) {
+        if (withHorizontalFloating) {
+          translateXOffset = elementWidth.value + cursorGutter;
+        } else {
+          const xOffset = x - (width - elementFullWidth);
+          translateXOffset = translateXOffset + xOffset;
+        }
+      }
+    } else {
+      if (x < elementWidth.value / 2 + xGutter) {
+        const xOffset = elementWidth.value / 2 + xGutter - x;
+        translateXOffset = translateXOffset - xOffset;
+      }
+      if (x > width - elementWidth.value / 2 - xGutter) {
+        const xOffset = x - (width - elementWidth.value / 2 - xGutter);
+        translateXOffset = translateXOffset + xOffset;
+      }
     }
-    if (x > width - elementWidth.value / 2 - xGutter) {
-      const xOffset = x - (width - elementWidth.value / 2 - xGutter);
-      translateXOffset = translateXOffset + xOffset;
-    }
+  
+    const translateX = x - translateXOffset;
 
     // Calculate Y position:
     let translateYOffset = 0;
@@ -110,6 +143,8 @@ export function LineChartTooltip({
       if (y - translateYOffset + elementHeight.value > height - yGutter) {
         translateYOffset = y - (height - yGutter) + elementHeight.value;
       }
+    } else if (position === 'right' || position === 'left'){
+      translateYOffset = elementHeight.value / 2;
     }
 
     // determine final translateY value
@@ -132,10 +167,8 @@ export function LineChartTooltip({
 
     return {
       transform: [
-        { translateX: x - translateXOffset },
-        {
-          translateY: translateY,
-        },
+        { translateX: translateX },
+        { translateY: translateY },
       ],
       opacity: opacity,
     };
